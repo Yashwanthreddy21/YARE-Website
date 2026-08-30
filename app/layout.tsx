@@ -4,6 +4,7 @@ import { Navigation } from '@/components/Navigation';
 import { AuthProvider } from '@/components/AuthProvider';
 import { CloudSyncProvider } from '@/components/CloudSyncProvider';
 import { AuthGate } from '@/components/AuthGate';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 export const metadata: Metadata = {
   title: 'YARE — Personal OS',
@@ -12,18 +13,20 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
-        <AuthProvider>
-          <CloudSyncProvider>
-            <AuthGate>
-              <Navigation />
-              <main className="mx-auto min-h-screen max-w-5xl px-4 pb-28 pt-6 md:ml-64 md:px-8 md:pb-10">
-                {children}
-              </main>
-            </AuthGate>
-          </CloudSyncProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <CloudSyncProvider>
+              <AuthGate>
+                <Navigation />
+                <main className="mx-auto min-h-screen max-w-5xl px-4 pb-28 pt-6 md:ml-64 md:px-8 md:pb-10">
+                  {children}
+                </main>
+              </AuthGate>
+            </CloudSyncProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
