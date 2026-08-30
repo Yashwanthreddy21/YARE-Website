@@ -42,7 +42,7 @@ create table if not exists tasks (
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   primary key (user_id, id),
-  foreign key (user_id, category_id) references categories(user_id, id) on delete set null
+  foreign key (user_id, category_id) references categories(user_id, id) on delete restrict
 );
 
 create table if not exists task_schedules (
@@ -73,7 +73,7 @@ create table if not exists task_logs (
   updated_at timestamptz default now(),
   primary key (user_id, id),
   unique(user_id, task_id, date),
-  foreign key (user_id, task_id) references tasks(user_id, id) on delete set null
+  foreign key (user_id, task_id) references tasks(user_id, id) on delete restrict
 );
 
 create table if not exists expenses (
