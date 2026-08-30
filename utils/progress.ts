@@ -41,12 +41,20 @@ export function dailyScore(tasks: Task[], logs: TaskLog[], date: Date) {
   return Math.round((total / scored.length) * 100);
 }
 
+// A current streak counts consecutive 100% scored days. An unfinished current day
+// does not erase yesterday's streak; once today reaches 100%, today joins it.
 export function overallStreak(tasks: Task[], logs: TaskLog[], from = new Date()) {
   let streak = 0;
   const cursor = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const todayKey = localDateKey();
+
+  if (localDateKey(cursor) === todayKey && dailyScore(tasks, logs, cursor) < 100) {
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
   for (let i = 0; i < 3660; i += 1) {
     const iso = localDateKey(cursor);
-    const historical = iso < localDateKey();
+    const historical = iso < todayKey;
     const scheduled = tasks.filter((task) => task.includeInScore && (historical ? matchesTaskCalendar(task, cursor) : isTaskScheduled(task, cursor)));
     if (!scheduled.length) {
       cursor.setDate(cursor.getDate() - 1);
