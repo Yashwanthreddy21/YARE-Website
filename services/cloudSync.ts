@@ -72,12 +72,12 @@ export async function loadCloudSnapshot(supabase: SupabaseClient, userId: string
 
 export async function pushLocalSnapshot(supabase: SupabaseClient, userId: string, snapshot: CloudSnapshot) {
   if (snapshot.categories.length) {
-    const { error } = await supabase.from('categories').upsert(snapshot.categories.map(c => ({ id: c.id, user_id: userId, name: c.name, icon: c.icon, sort_order: c.sortOrder })));
+    const { error } = await supabase.from('categories').upsert(snapshot.categories.map(c => ({ id: c.id, user_id: userId, name: c.name, icon: c.icon, sort_order: c.sortOrder })), { onConflict: 'user_id,id' });
     if (error) throw error;
   }
 
   if (snapshot.tasks.length) {
-    const { error } = await supabase.from('tasks').upsert(snapshot.tasks.map(t => ({ id: t.id, user_id: userId, name: t.name, category_id: t.categoryId, task_type: t.taskType, icon: t.icon, theme_tag: t.themeTag ?? null, unit: t.unit ?? null, target_value: t.targetValue ?? null, min_value: t.minValue ?? null, max_value: t.maxValue ?? null, frequency_type: t.frequency, start_date: t.startDate, end_date: t.endDate ?? null, active: t.active, archived: t.archived, deleted: t.deleted ?? false, include_in_score: t.includeInScore, reminder_enabled: t.reminderEnabled, reminder_time: t.reminderTime ?? null, notes: t.notes ?? null, sort_order: t.sortOrder })));
+    const { error } = await supabase.from('tasks').upsert(snapshot.tasks.map(t => ({ id: t.id, user_id: userId, name: t.name, category_id: t.categoryId, task_type: t.taskType, icon: t.icon, theme_tag: t.themeTag ?? null, unit: t.unit ?? null, target_value: t.targetValue ?? null, min_value: t.minValue ?? null, max_value: t.maxValue ?? null, frequency_type: t.frequency, start_date: t.startDate, end_date: t.endDate ?? null, active: t.active, archived: t.archived, deleted: t.deleted ?? false, include_in_score: t.includeInScore, reminder_enabled: t.reminderEnabled, reminder_time: t.reminderTime ?? null, notes: t.notes ?? null, sort_order: t.sortOrder })), { onConflict: 'user_id,id' });
     if (error) throw error;
     const { error: clearScheduleError } = await supabase.from('task_schedules').delete().eq('user_id', userId);
     if (clearScheduleError) throw clearScheduleError;
@@ -94,12 +94,12 @@ export async function pushLocalSnapshot(supabase: SupabaseClient, userId: string
   }
 
   if (snapshot.expenses.length) {
-    const { error } = await supabase.from('expenses').upsert(snapshot.expenses.map(e => ({ id: e.id, user_id: userId, date: e.date, amount: e.amount, category: e.category, description: e.description, notes: e.notes ?? null })));
+    const { error } = await supabase.from('expenses').upsert(snapshot.expenses.map(e => ({ id: e.id, user_id: userId, date: e.date, amount: e.amount, category: e.category, description: e.description, notes: e.notes ?? null })), { onConflict: 'user_id,id' });
     if (error) throw error;
   }
 
   if (snapshot.jobs.length) {
-    const { error } = await supabase.from('job_applications').upsert(snapshot.jobs.map(j => ({ id: j.id, user_id: userId, company: j.company, role: j.role, date_applied: j.dateApplied, job_url: j.jobUrl ?? null, location: j.location ?? null, salary: j.salary ?? null, work_type: j.workType ?? null, status: j.status, notes: j.notes ?? null })));
+    const { error } = await supabase.from('job_applications').upsert(snapshot.jobs.map(j => ({ id: j.id, user_id: userId, company: j.company, role: j.role, date_applied: j.dateApplied, job_url: j.jobUrl ?? null, location: j.location ?? null, salary: j.salary ?? null, work_type: j.workType ?? null, status: j.status, notes: j.notes ?? null })), { onConflict: 'user_id,id' });
     if (error) throw error;
   }
 
