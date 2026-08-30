@@ -7,19 +7,20 @@ create table if not exists profiles (
 );
 
 create table if not exists categories (
-  id text primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
+  id text not null,
   name text not null,
   icon text,
   sort_order int default 0,
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  primary key (user_id, id)
 );
 
 create table if not exists tasks (
-  id text primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
+  id text not null,
   name text not null,
-  category_id text references categories(id) on delete set null,
+  category_id text,
   task_type text not null,
   icon text,
   theme_tag text,
@@ -39,24 +40,25 @@ create table if not exists tasks (
   notes text,
   sort_order int default 0,
   created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  updated_at timestamptz default now(),
+  primary key (user_id, id),
+  foreign key (user_id, category_id) references categories(user_id, id) on delete set null
 );
-
-alter table tasks add column if not exists deleted boolean default false;
 
 create table if not exists task_schedules (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  task_id text not null references tasks(id) on delete cascade,
+  task_id text not null,
   day_of_week int not null check(day_of_week between 0 and 6),
   frequency_type text default 'custom',
-  unique(user_id, task_id, day_of_week)
+  unique(user_id, task_id, day_of_week),
+  foreign key (user_id, task_id) references tasks(user_id, id) on delete cascade
 );
 
 create table if not exists task_logs (
-  id text primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
-  task_id text references tasks(id) on delete set null,
+  id text not null,
+  task_id text,
   date date not null,
   completed boolean default false,
   numeric_value numeric,
@@ -69,23 +71,26 @@ create table if not exists task_logs (
   notes text,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  unique(user_id, task_id, date)
+  primary key (user_id, id),
+  unique(user_id, task_id, date),
+  foreign key (user_id, task_id) references tasks(user_id, id) on delete set null
 );
 
 create table if not exists expenses (
-  id text primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
+  id text not null,
   date date not null,
   amount numeric not null check(amount >= 0),
   category text not null,
   description text,
   notes text,
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  primary key (user_id, id)
 );
 
 create table if not exists job_applications (
-  id text primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
+  id text not null,
   company text not null,
   role text not null,
   date_applied date not null,
@@ -95,25 +100,28 @@ create table if not exists job_applications (
   work_type text,
   status text not null default 'Applied',
   notes text,
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  primary key (user_id, id)
 );
 
 create table if not exists schedule_items (
-  id text primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
+  id text not null,
   day_of_week int not null check(day_of_week between 0 and 6),
   title text not null,
   start_time time,
   end_time time,
-  sort_order int default 0
+  sort_order int default 0,
+  primary key (user_id, id)
 );
 
 create table if not exists user_goals (
-  id text primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
+  id text not null,
   goal_name text not null,
   goal_value numeric,
   unit text,
+  primary key (user_id, id),
   unique(user_id, goal_name)
 );
 
