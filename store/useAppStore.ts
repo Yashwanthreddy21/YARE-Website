@@ -4,8 +4,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Category, Expense, JobApplication, Task, TaskLog } from '@/types';
 import type { CloudSnapshot } from '@/services/cloudSync';
+import { localDateKey } from '@/utils/date';
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => localDateKey(new Date());
 const weekdays = [1, 2, 3, 4, 5];
 const daily = [0, 1, 2, 3, 4, 5, 6];
 
@@ -18,7 +19,7 @@ const categories: Category[] = [
   { id: 'personal', name: 'Personal', icon: 'Sparkles', sortOrder: 6 },
 ];
 
-const base = { frequency: 'daily' as const, startDate: today(), active: true, archived: false, includeInScore: true, reminderEnabled: false };
+const base = { frequency: 'daily' as const, startDate: today(), active: true, archived: false, deleted: false, includeInScore: true, reminderEnabled: false };
 const defaultTasks: Task[] = [
   { ...base, id: 'wake', name: 'Wake Up', categoryId: 'health', taskType: 'time', icon: 'Sunrise', daysOfWeek: daily, reminderEnabled: true, reminderTime: '06:00', sortOrder: 1 },
   { ...base, id: 'gym', name: 'Gym', categoryId: 'fitness', taskType: 'checkbox', icon: 'Dumbbell', daysOfWeek: weekdays, sortOrder: 2 },
@@ -63,13 +64,13 @@ export const useAppStore = create<AppState>()(persist((set) => ({
   expenses: [],
   jobs: [],
   syncStatus: 'local',
-  addTask: (task) => set((s) => ({ tasks: [...s.tasks, task] })),
+  addTask: (task) => set((s) => ({ tasks: [...s.tasks, { ...task, deleted: false }] })),
   updateTask: (id, patch) => set((s) => ({ tasks: s.tasks.map((t) => t.id === id ? { ...t, ...patch } : t) })),
-  archiveTask: (id, archived) => set((s) => ({ tasks: s.tasks.map((t) => t.id === id ? { ...t, archived, active: archived ? false : t.active } : t) })),
-  deleteTask: (id) => set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
+  archiveTask: (id, archived) => set((s) => ({ tasks: s.tasks.map((t) => t.id === id ? { ...t, archived, active: archived ? false : true } : t) })),
+  deleteTask: (id) => set((s) => ({ tasks: s.tasks.map((t) => t.id === id ? { ...t, deleted: true, archived: false, active: false } : t) })),
   duplicateTask: (id) => set((s) => {
-    const t = s.tasks.find((x) => x.id === id);
-    return t ? { tasks: [...s.tasks, { ...t, id: crypto.randomUUID(), name: `${t.name} Copy`, sortOrder: s.tasks.length + 1 }] } : s;
+    const t = s.tasks.find((x) => x.id === id && !x.deleted);
+    return t ? { tasks: [...s.tasks, { ...t, id: crypto.randomUUID(), name: `${t.name} Copy`, archived: false, deleted: false, active: true, sortOrder: s.tasks.length + 1 }] } : s;
   }),
   upsertLog: (log) => set((s) => ({ logs: [...s.logs.filter((l) => !(l.taskId === log.taskId && l.date === log.date)), log] })),
   addExpense: (expense) => set((s) => ({ expenses: [...s.expenses, expense] })),
