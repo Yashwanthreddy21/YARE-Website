@@ -60,7 +60,7 @@ export async function loadCloudSnapshot(supabase: SupabaseClient, userId: string
   }
 
   return {
-    categories: (categoriesRes.data ?? []).map((row: any) => ({ id: row.id, name: row.name, icon: row.icon ?? 'Folder', sortOrder: row.sort_order ?? 0 })),
+    categories: (categoriesRes.data ?? []).map((row: any) => ({ id: row.id, name: row.name, icon: row.icon ?? 'Folder', sortOrder: row.sort_order ?? 0, deleted: row.deleted ?? false })),
     tasks: (tasksRes.data ?? []).map((row: any) => toTask(row, schedules.get(row.id) ?? [])),
     logs: (logsRes.data ?? []).map((row: any) => ({ id: row.id, taskId: row.task_id, date: row.date, completed: row.completed, numericValue: row.numeric_value == null ? undefined : Number(row.numeric_value), textValue: row.text_value ?? undefined, timeValue: row.time_value?.slice(0, 5) ?? undefined, durationMinutes: row.duration_minutes ?? undefined, targetSnapshot: row.target_snapshot == null ? undefined : Number(row.target_snapshot), minSnapshot: row.min_snapshot == null ? undefined : Number(row.min_snapshot), maxSnapshot: row.max_snapshot == null ? undefined : Number(row.max_snapshot), notes: row.notes ?? undefined })),
     expenses: (expensesRes.data ?? []).map((row: any) => ({ id: row.id, date: row.date, amount: Number(row.amount), category: row.category, description: row.description ?? '', notes: row.notes ?? undefined })),
@@ -72,7 +72,7 @@ export async function loadCloudSnapshot(supabase: SupabaseClient, userId: string
 
 export async function pushLocalSnapshot(supabase: SupabaseClient, userId: string, snapshot: CloudSnapshot) {
   if (snapshot.categories.length) {
-    const { error } = await supabase.from('categories').upsert(snapshot.categories.map(c => ({ id: c.id, user_id: userId, name: c.name, icon: c.icon, sort_order: c.sortOrder })), { onConflict: 'user_id,id' });
+    const { error } = await supabase.from('categories').upsert(snapshot.categories.map(c => ({ id: c.id, user_id: userId, name: c.name, icon: c.icon, sort_order: c.sortOrder, deleted: c.deleted ?? false })), { onConflict: 'user_id,id' });
     if (error) throw error;
   }
 
