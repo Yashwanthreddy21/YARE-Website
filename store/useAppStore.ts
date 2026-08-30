@@ -59,7 +59,9 @@ interface AppState {
   duplicateTask: (id: string) => void;
   upsertLog: (log: TaskLog) => void;
   addExpense: (expense: Expense) => void;
+  updateExpense: (id: string, patch: Partial<Expense>) => void;
   addJob: (job: JobApplication) => void;
+  updateJob: (id: string, patch: Partial<JobApplication>) => void;
   addScheduleItem: (item: ScheduleItem) => void;
   updateScheduleItem: (id: string, patch: Partial<ScheduleItem>) => void;
   deleteScheduleItem: (id: string) => void;
@@ -88,7 +90,9 @@ export const useAppStore = create<AppState>()(persist((set) => ({
   }),
   upsertLog: (log) => set((s) => ({ logs: [...s.logs.filter((l) => !(l.taskId === log.taskId && l.date === log.date)), log] })),
   addExpense: (expense) => set((s) => ({ expenses: [...s.expenses, expense] })),
+  updateExpense: (id, patch) => set((s) => ({ expenses: s.expenses.map((expense) => expense.id === id ? { ...expense, ...patch } : expense) })),
   addJob: (job) => set((s) => ({ jobs: [...s.jobs, job] })),
+  updateJob: (id, patch) => set((s) => ({ jobs: s.jobs.map((job) => job.id === id ? { ...job, ...patch } : job) })),
   addScheduleItem: (item) => set((s) => ({ scheduleItems: [...s.scheduleItems, item] })),
   updateScheduleItem: (id, patch) => set((s) => ({ scheduleItems: s.scheduleItems.map((item) => item.id === id ? { ...item, ...patch } : item) })),
   deleteScheduleItem: (id) => set((s) => ({ scheduleItems: s.scheduleItems.filter((item) => item.id !== id) })),
