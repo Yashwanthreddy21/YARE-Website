@@ -12,6 +12,7 @@ create table if not exists categories (
   name text not null,
   icon text,
   sort_order int default 0,
+  deleted boolean default false,
   created_at timestamptz default now(),
   primary key (user_id, id)
 );
