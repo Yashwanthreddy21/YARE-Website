@@ -32,6 +32,7 @@ create table if not exists tasks (
   end_date date,
   active boolean default true,
   archived boolean default false,
+  deleted boolean default false,
   include_in_score boolean default true,
   reminder_enabled boolean default false,
   reminder_time time,
@@ -40,6 +41,8 @@ create table if not exists tasks (
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+alter table tasks add column if not exists deleted boolean default false;
 
 create table if not exists task_schedules (
   id uuid primary key default gen_random_uuid(),
