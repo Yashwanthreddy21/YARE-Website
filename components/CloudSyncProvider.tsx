@@ -31,10 +31,26 @@ export function CloudSyncProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) return;
     syncing.current = true;
     try {
+      const state = useAppStore.getState();
       const cloud = await loadCloudSnapshot(supabase, user.id);
       const cloudIsEmpty = cloud.tasks.length === 0 && cloud.logs.length === 0 && cloud.expenses.length === 0 && cloud.jobs.length === 0 && cloud.scheduleItems.length === 0 && cloud.goals.length === 0;
-      if (cloudIsEmpty) await pushLocalSnapshot(supabase, user.id, buildSnapshot());
-      else useAppStore.getState().replaceFromCloud(cloud);
+      const differentOwner = Boolean(state.dataOwnerId && state.dataOwnerId !== user.id);
+
+      if (differentOwner) {
+        if (cloudIsEmpty) {
+          state.resetForAccount(user.id);
+          await pushLocalSnapshot(supabase, user.id, buildSnapshot());
+        } else {
+          state.replaceFromCloud(cloud);
+          state.claimDataOwner(user.id);
+        }
+      } else if (cloudIsEmpty) {
+        state.claimDataOwner(user.id);
+        await pushLocalSnapshot(supabase, user.id, buildSnapshot());
+      } else {
+        state.replaceFromCloud(cloud);
+        state.claimDataOwner(user.id);
+      }
       useAppStore.getState().setSyncStatus('synced');
     } catch (error) {
       console.error('YARE cloud sync failed', error);
@@ -66,7 +82,7 @@ export function CloudSyncProvider({ children }: { children: React.ReactNode }) {
     if (!user || !configured) return;
     let timer: number | undefined;
     const unsubscribe = useAppStore.subscribe((state, previous) => {
-      if (!hasBootstrapped.current || syncing.current) return;
+      if (!hasBootstrapped.current || syncing.current || state.dataOwnerId !== user.id) return;
       const unchanged = state.tasks === previous.tasks && state.logs === previous.logs && state.expenses === previous.expenses && state.jobs === previous.jobs && state.categories === previous.categories && state.scheduleItems === previous.scheduleItems && state.goals === previous.goals;
       if (unchanged) return;
       useAppStore.getState().setSyncStatus('pending');
