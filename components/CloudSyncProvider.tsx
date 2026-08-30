@@ -89,7 +89,7 @@ export function CloudSyncProvider({ children }: { children: React.ReactNode }) {
       if (timer) window.clearTimeout(timer);
       timer = window.setTimeout(async () => {
         const supabase = getSupabaseBrowserClient();
-        if (!supabase || syncing.current) return;
+        if (!supabase || syncing.current || !navigator.onLine) return;
         syncing.current = true;
         try {
           await pushLocalSnapshot(supabase, user.id, buildSnapshot());
@@ -106,6 +106,29 @@ export function CloudSyncProvider({ children }: { children: React.ReactNode }) {
       if (timer) window.clearTimeout(timer);
       unsubscribe();
     };
+  }, [user, configured]);
+
+  useEffect(() => {
+    if (!user || !configured) return;
+    const handleOnline = async () => {
+      const state = useAppStore.getState();
+      if (state.dataOwnerId !== user.id || syncing.current) return;
+      const supabase = getSupabaseBrowserClient();
+      if (!supabase) return;
+      syncing.current = true;
+      state.setSyncStatus('pending');
+      try {
+        await pushLocalSnapshot(supabase, user.id, buildSnapshot());
+        useAppStore.getState().setSyncStatus('synced');
+      } catch (error) {
+        console.error('YARE reconnect sync failed', error);
+        useAppStore.getState().setSyncStatus('error');
+      } finally {
+        syncing.current = false;
+      }
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
   }, [user, configured]);
 
   if (!ready) return <div className="mx-auto flex min-h-[60vh] max-w-xl items-center justify-center text-sm text-slate-500">Syncing your YARE data…</div>;
