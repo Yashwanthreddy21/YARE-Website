@@ -25,6 +25,7 @@ export interface Task {
   endDate?: string;
   active: boolean;
   archived: boolean;
+  deleted?: boolean;
   includeInScore: boolean;
   reminderEnabled: boolean;
   reminderTime?: string;
