@@ -3,7 +3,7 @@ import { localDateKey } from '@/utils/date';
 
 export function isTaskScheduled(task: Task, date: Date) {
   const iso = localDateKey(date);
-  if (!task.active || task.archived || iso < task.startDate || (task.endDate && iso > task.endDate)) return false;
+  if (!task.active || task.archived || task.deleted || iso < task.startDate || (task.endDate && iso > task.endDate)) return false;
   if (task.frequency === 'once') return iso === task.startDate;
   return task.daysOfWeek.includes(date.getDay());
 }
