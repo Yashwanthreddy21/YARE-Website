@@ -6,6 +6,7 @@ export interface Category {
   name: string;
   icon: string;
   sortOrder: number;
+  deleted?: boolean;
 }
 
 export interface Task {
