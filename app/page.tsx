@@ -2,19 +2,21 @@
 
 import { format } from 'date-fns';
 import { useAppStore } from '@/store/useAppStore';
-import { dailyScore, isTaskScheduled, overallStreak, taskProgress } from '@/utils/progress';
+import { dailyScore, isTaskScheduled, matchesTaskCalendar, overallStreak, taskProgress } from '@/utils/progress';
 import { localDateKey } from '@/utils/date';
 import { TaskCard } from '@/components/TaskCard';
-import { Flame, Target } from 'lucide-react';
+import { Flame, Target, Dumbbell } from 'lucide-react';
 
 export default function TodayPage() {
   const tasks = useAppStore((s) => s.tasks);
   const logs = useAppStore((s) => s.logs);
   const now = new Date();
   const date = localDateKey(now);
-  const scheduled = tasks.filter((t) => isTaskScheduled(t, now)).sort((a, b) => a.sortOrder - b.sortOrder);
+  const scheduled = tasks.filter((task) => isTaskScheduled(task, now)).sort((a, b) => a.sortOrder - b.sortOrder);
+  const gym = tasks.find((task) => task.id === 'gym' && task.active && !task.archived && !task.deleted);
+  const gymRestDay = Boolean(gym && !matchesTaskCalendar(gym, now));
   const score = dailyScore(tasks, logs, now);
-  const completed = scheduled.filter((t) => taskProgress(t, logs.find((l) => l.taskId === t.id && l.date === date)) >= 1).length;
+  const completed = scheduled.filter((task) => taskProgress(task, logs.find((log) => log.taskId === task.id && log.date === date)) >= 1).length;
   const streak = overallStreak(tasks, logs, now);
 
   return (
@@ -54,9 +56,15 @@ export default function TodayPage() {
         <span className="text-right text-xs text-slate-500">Tap and update inline</span>
       </div>
       <div className="grid gap-3 lg:grid-cols-2">
-        {scheduled.map((task) => <TaskCard key={task.id} task={task} date={date} log={logs.find((l) => l.taskId === task.id && l.date === date)} />)}
+        {gymRestDay && (
+          <div className="card flex items-center justify-between gap-4 p-4">
+            <div className="flex items-center gap-3"><div className="rounded-xl bg-slate-100 p-2 dark:bg-slate-800"><Dumbbell size={19} /></div><div><div className="font-semibold">Gym</div><div className="text-xs text-slate-500">Fitness</div></div></div>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">Rest Day</span>
+          </div>
+        )}
+        {scheduled.map((task) => <TaskCard key={task.id} task={task} date={date} log={logs.find((log) => log.taskId === task.id && log.date === date)} />)}
       </div>
-      {!scheduled.length && <div className="card p-8 text-center text-slate-500">No tasks scheduled today. Enjoy your rest day.</div>}
+      {!scheduled.length && !gymRestDay && <div className="card p-8 text-center text-slate-500">No tasks scheduled today. Enjoy your rest day.</div>}
       <div className="mt-6 text-center text-sm font-semibold">Daily Score: {score}%</div>
     </div>
   );
