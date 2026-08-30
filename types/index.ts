@@ -70,3 +70,19 @@ export interface JobApplication {
   status: JobStatus;
   notes?: string;
 }
+
+export interface ScheduleItem {
+  id: string;
+  dayOfWeek: number;
+  title: string;
+  startTime: string;
+  endTime?: string;
+  sortOrder: number;
+}
+
+export interface UserGoal {
+  id: string;
+  goalName: string;
+  goalValue?: number;
+  unit?: string;
+}
