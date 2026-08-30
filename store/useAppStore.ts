@@ -51,6 +51,7 @@ interface AppState {
   jobs: JobApplication[];
   scheduleItems: ScheduleItem[];
   goals: UserGoal[];
+  dataOwnerId?: string;
   syncStatus: SyncStatus;
   addTask: (task: Task) => void;
   updateTask: (id: string, patch: Partial<Task>) => void;
@@ -68,6 +69,8 @@ interface AppState {
   copyScheduleDay: (sourceDay: number, targetDays: number[]) => void;
   moveScheduleItem: (id: string, direction: -1 | 1) => void;
   replaceFromCloud: (snapshot: CloudSnapshot) => void;
+  claimDataOwner: (userId: string) => void;
+  resetForAccount: (userId: string) => void;
   setSyncStatus: (status: SyncStatus) => void;
 }
 
@@ -79,6 +82,7 @@ export const useAppStore = create<AppState>()(persist((set) => ({
   jobs: [],
   scheduleItems: defaultScheduleItems,
   goals: [],
+  dataOwnerId: undefined,
   syncStatus: 'local',
   addTask: (task) => set((s) => ({ tasks: [...s.tasks, { ...task, deleted: false }] })),
   updateTask: (id, patch) => set((s) => ({ tasks: s.tasks.map((t) => t.id === id ? { ...t, ...patch } : t) })),
@@ -113,8 +117,10 @@ export const useAppStore = create<AppState>()(persist((set) => ({
     return { scheduleItems: s.scheduleItems.map((item) => item.id === current.id ? { ...item, sortOrder: target.sortOrder } : item.id === target.id ? { ...item, sortOrder: current.sortOrder } : item) };
   }),
   replaceFromCloud: (snapshot) => set({ ...snapshot }),
+  claimDataOwner: (dataOwnerId) => set({ dataOwnerId }),
+  resetForAccount: (dataOwnerId) => set({ categories, tasks: defaultTasks.map((task) => ({ ...task })), logs: [], expenses: [], jobs: [], scheduleItems: defaultScheduleItems.map((item) => ({ ...item })), goals: [], dataOwnerId, syncStatus: 'local' }),
   setSyncStatus: (syncStatus) => set({ syncStatus }),
 }), {
   name: 'yare-personal-os-v1',
-  partialize: (state) => ({ categories: state.categories, tasks: state.tasks, logs: state.logs, expenses: state.expenses, jobs: state.jobs, scheduleItems: state.scheduleItems, goals: state.goals }),
+  partialize: (state) => ({ categories: state.categories, tasks: state.tasks, logs: state.logs, expenses: state.expenses, jobs: state.jobs, scheduleItems: state.scheduleItems, goals: state.goals, dataOwnerId: state.dataOwnerId }),
 }));
