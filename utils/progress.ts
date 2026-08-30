@@ -1,11 +1,16 @@
 import type { Task, TaskLog } from '@/types';
 import { localDateKey } from '@/utils/date';
 
-export function isTaskScheduled(task: Task, date: Date) {
+export function matchesTaskCalendar(task: Task, date: Date) {
   const iso = localDateKey(date);
-  if (!task.active || task.archived || task.deleted || iso < task.startDate || (task.endDate && iso > task.endDate)) return false;
+  if (iso < task.startDate || (task.endDate && iso > task.endDate)) return false;
   if (task.frequency === 'once') return iso === task.startDate;
   return task.daysOfWeek.includes(date.getDay());
+}
+
+export function isTaskScheduled(task: Task, date: Date) {
+  if (!task.active || task.archived || task.deleted) return false;
+  return matchesTaskCalendar(task, date);
 }
 
 export function taskProgress(task: Task, log?: TaskLog) {
@@ -28,9 +33,11 @@ export function taskProgress(task: Task, log?: TaskLog) {
 
 export function dailyScore(tasks: Task[], logs: TaskLog[], date: Date) {
   const iso = localDateKey(date);
-  const scored = tasks.filter((t) => t.includeInScore && isTaskScheduled(t, date));
+  const today = localDateKey();
+  const historical = iso < today;
+  const scored = tasks.filter((task) => task.includeInScore && (historical ? matchesTaskCalendar(task, date) : isTaskScheduled(task, date)));
   if (!scored.length) return 100;
-  const total = scored.reduce((sum, task) => sum + taskProgress(task, logs.find((l) => l.taskId === task.id && l.date === iso)), 0);
+  const total = scored.reduce((sum, task) => sum + taskProgress(task, logs.find((log) => log.taskId === task.id && log.date === iso)), 0);
   return Math.round((total / scored.length) * 100);
 }
 
@@ -38,7 +45,9 @@ export function overallStreak(tasks: Task[], logs: TaskLog[], from = new Date())
   let streak = 0;
   const cursor = new Date(from.getFullYear(), from.getMonth(), from.getDate());
   for (let i = 0; i < 3660; i += 1) {
-    const scheduled = tasks.filter((t) => t.includeInScore && isTaskScheduled(t, cursor));
+    const iso = localDateKey(cursor);
+    const historical = iso < localDateKey();
+    const scheduled = tasks.filter((task) => task.includeInScore && (historical ? matchesTaskCalendar(task, cursor) : isTaskScheduled(task, cursor)));
     if (!scheduled.length) {
       cursor.setDate(cursor.getDate() - 1);
       continue;
