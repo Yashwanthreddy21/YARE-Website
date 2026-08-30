@@ -40,6 +40,9 @@ const weekdayRoutine = [
   ['06:00', 'Wake Up'], ['06:15', 'Morning Routine'], ['06:30', 'Gym / Workout'], ['08:00', 'Breakfast'], ['08:30', 'Job Applications'], ['11:00', 'Preparation / Study'], ['13:00', 'Lunch'], ['14:00', 'Job Applications'], ['16:00', 'Interview Prep / Learning'], ['18:00', 'Steps / Walk'], ['19:30', 'Dinner'], ['20:30', 'Daily Review'], ['21:30', 'Prepare for Bed'],
 ];
 const defaultScheduleItems: ScheduleItem[] = weekdays.flatMap((day) => weekdayRoutine.map(([startTime, title], index) => ({ id: `schedule-${day}-${index}`, dayOfWeek: day, title, startTime, sortOrder: index + 1 })));
+const defaultGoals: UserGoal[] = [
+  { id: 'monthly-spending', goalName: 'Monthly Spending', goalValue: 1500, unit: '$' },
+];
 
 export type SyncStatus = 'local' | 'pending' | 'synced' | 'error';
 
@@ -58,6 +61,7 @@ interface AppState {
   archiveTask: (id: string, archived: boolean) => void;
   deleteTask: (id: string) => void;
   duplicateTask: (id: string) => void;
+  moveTask: (id: string, direction: -1 | 1) => void;
   upsertLog: (log: TaskLog) => void;
   addExpense: (expense: Expense) => void;
   updateExpense: (id: string, patch: Partial<Expense>) => void;
@@ -68,6 +72,8 @@ interface AppState {
   deleteScheduleItem: (id: string) => void;
   copyScheduleDay: (sourceDay: number, targetDays: number[]) => void;
   moveScheduleItem: (id: string, direction: -1 | 1) => void;
+  upsertGoal: (goal: UserGoal) => void;
+  deleteGoal: (id: string) => void;
   replaceFromCloud: (snapshot: CloudSnapshot) => void;
   claimDataOwner: (userId: string) => void;
   resetForAccount: (userId: string) => void;
@@ -81,7 +87,7 @@ export const useAppStore = create<AppState>()(persist((set) => ({
   expenses: [],
   jobs: [],
   scheduleItems: defaultScheduleItems,
-  goals: [],
+  goals: defaultGoals,
   dataOwnerId: undefined,
   syncStatus: 'local',
   addTask: (task) => set((s) => ({ tasks: [...s.tasks, { ...task, deleted: false }] })),
@@ -91,6 +97,15 @@ export const useAppStore = create<AppState>()(persist((set) => ({
   duplicateTask: (id) => set((s) => {
     const t = s.tasks.find((x) => x.id === id && !x.deleted);
     return t ? { tasks: [...s.tasks, { ...t, id: crypto.randomUUID(), name: `${t.name} Copy`, archived: false, deleted: false, active: true, sortOrder: s.tasks.length + 1 }] } : s;
+  }),
+  moveTask: (id, direction) => set((s) => {
+    const visible = s.tasks.filter((task) => !task.deleted && !task.archived).sort((a, b) => a.sortOrder - b.sortOrder);
+    const index = visible.findIndex((task) => task.id === id);
+    const targetIndex = index + direction;
+    if (index < 0 || targetIndex < 0 || targetIndex >= visible.length) return s;
+    const current = visible[index];
+    const target = visible[targetIndex];
+    return { tasks: s.tasks.map((task) => task.id === current.id ? { ...task, sortOrder: target.sortOrder } : task.id === target.id ? { ...task, sortOrder: current.sortOrder } : task) };
   }),
   upsertLog: (log) => set((s) => ({ logs: [...s.logs.filter((l) => !(l.taskId === log.taskId && l.date === log.date)), log] })),
   addExpense: (expense) => set((s) => ({ expenses: [...s.expenses, expense] })),
@@ -116,9 +131,11 @@ export const useAppStore = create<AppState>()(persist((set) => ({
     const target = sameDay[targetIndex];
     return { scheduleItems: s.scheduleItems.map((item) => item.id === current.id ? { ...item, sortOrder: target.sortOrder } : item.id === target.id ? { ...item, sortOrder: current.sortOrder } : item) };
   }),
+  upsertGoal: (goal) => set((s) => ({ goals: [...s.goals.filter((item) => item.id !== goal.id), goal] })),
+  deleteGoal: (id) => set((s) => ({ goals: s.goals.filter((goal) => goal.id !== id) })),
   replaceFromCloud: (snapshot) => set({ ...snapshot }),
   claimDataOwner: (dataOwnerId) => set({ dataOwnerId }),
-  resetForAccount: (dataOwnerId) => set({ categories, tasks: defaultTasks.map((task) => ({ ...task })), logs: [], expenses: [], jobs: [], scheduleItems: defaultScheduleItems.map((item) => ({ ...item })), goals: [], dataOwnerId, syncStatus: 'local' }),
+  resetForAccount: (dataOwnerId) => set({ categories, tasks: defaultTasks.map((task) => ({ ...task })), logs: [], expenses: [], jobs: [], scheduleItems: defaultScheduleItems.map((item) => ({ ...item })), goals: defaultGoals.map((goal) => ({ ...goal })), dataOwnerId, syncStatus: 'local' }),
   setSyncStatus: (syncStatus) => set({ syncStatus }),
 }), {
   name: 'yare-personal-os-v1',
